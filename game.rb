@@ -1,28 +1,41 @@
 require 'colorize'
 require_relative 'code_helper'
+require_relative 'computer'
 
 class String
   def num_string_to_arr
-    self.split('').map { |number| number.to_i }
+    self.gsub(" ", "").split('').map { |number| number.to_i }
+  end
+end
+
+class Array
+  def random_code
+    4.times do
+      random_number = rand(1..6)
+      self.push(random_number)
+    end
   end
 end
 
 class Game
   include CodeHelper
   
-  attr_accessor :guess, :guessed_right
-  attr_reader :code
+  attr_accessor :guess, :guessed_right, :computer_guessing
+  attr_reader :code, :rounds, :computer
   
   def initialize
     @code = []
+    @rounds = 12
+    @computer = Computer.new
+    @computer_guessing = false
     @guessed_right = false
   end
 
   def introduce
     puts "Welcome to a game of Mastermind".bold
     puts "Would you like to be 1 or 2:"
-    puts "1. creator of the secret code?"
-    puts "2. guesser of the secret code?"
+    puts "1. guesser of the secret code?"
+    puts "2. creator of the secret code?"
   end
 
   def start
@@ -30,58 +43,75 @@ class Game
     
     play_side = gets.chomp.to_i
 
-    select_random_numbers if play_side == 2
+    set_secret_code if play_side == 1
 
-    if play_side == 1
-        puts "What should the secret code be?"
-        @code = gets.chomp.num_string_to_arr
+    if play_side == 2
+      self.computer_guessing = true
+      puts "What should the secret code be?"
+      @code = get_input
     end
     
-    8.times do
+    rounds_left = rounds
+
+    rounds.times do
       return if guessed_right
-      play_round
+      play_round(rounds_left)
+      rounds_left -= 1
     end
 
     lose_game
   end
 
-  def play_round
-    puts ""
-    puts "Pick a sequence of four digits from 1-6!".bold
+  def get_input
+    gets.chomp.num_string_to_arr
+  end
 
-    # maybe some proc stuff here
-    begin
-      @guess = gets.chomp.gsub(" ", "")
-      
-      numbers_out_of_range = guess.split('').any? { |number| number.to_i > 6 || number.to_i < 1}
-      
-      raise StandardError.new "Digit out of range" if numbers_out_of_range
-      raise StandardError.new "Not correct number of digits" unless guess.length == 4
-    rescue StandardError=>e
-      puts ""
-      puts e
-      puts "Please enter exactly 4 digits, each between 1 and 6"
-      retry
+  def validate_code_input
+    return false unless guess
+    numbers_out_of_range = guess.any? { |number| number.to_i > 6 || number.to_i < 1}
+    
+    return false if numbers_out_of_range
+    return false unless guess.length == 4
+    
+    true
+    
+  end
+
+  def play_round(attempts_left)
+    puts ""
+    puts "You have #{attempts_left} attempts left."
+    puts "Pick a sequence of four digits from 1-6!".bold
+    if computer_guessing
+      @guess = computer.guess
+      #puts guess.join('')
     else
-      check_guess
+      @guess = get_input
+
+      until validate_code_input
+        puts "Please enter exactly 4 digits, each between 1 and 6".red unless validate_code_input
+        @guess = get_input
+      end
     end
+
+    check_guess
+    
   end
 
   def check_guess
-    guessed_digits = guess.split('')
     right_digits = Hash.new(0)
     exact_digits = 0
 
     code.each_with_index do |digit, i|
-      if guess.include?(digit.to_s) && !right_digits.key?(digit)
-        right_digits[digit] = guess.count(digit.to_s)
+      if guess.include?(digit) && !right_digits.key?(digit)
+        right_digits[digit] = guess.count(digit)
       end
 
       if right_digits[digit] > code.count(digit)
         right_digits[digit] = code.count(digit)
       end
       
-      if digit == guessed_digits[i].to_i
+      if digit == guess[i]
+        computer.guessed_numbers[i] = digit
         right_digits[digit] -= 1
         exact_digits += 1
       end
@@ -117,8 +147,8 @@ class Game
     puts ""
   end
 
-  def select_random_numbers
-    @code = random_code
+  def set_secret_code
+    code = random_code
     puts @code.join('')
   end
 end
@@ -127,3 +157,8 @@ end
 game = Game.new
 #puts game.code.join('')
 game.start
+
+
+#until [Input is 4 numbers in range 1-6] do
+#  get_input
+#end
