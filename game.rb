@@ -20,10 +20,37 @@ end
 class Game
   include CodeHelper
   
-  attr_accessor :guess, :guessed_right, :computer_guessing
-  attr_reader :code, :rounds, :computer
+  
+  def start
+    introduce
+    
+    play_side = gets.chomp.to_i
+
+    set_secret_code if play_side == 1
+   
+    if play_side == 2
+      self.computer_guessing = true
+      puts "What should the secret code be?"
+      self.code = get_input
+    end
+    
+    rounds_left = rounds
+
+    rounds.times do
+      return if guessed_right
+      play_round(rounds_left)
+      rounds_left -= 1
+    end
+
+    lose_game unless guessed_right
+  end
+
+  private
+  attr_accessor :guess, :guessed_right, :computer_guessing, :code
+  attr_reader :rounds, :computer
   
   def initialize
+    @guess = []
     @code = []
     @rounds = 12
     @computer = Computer.new
@@ -38,30 +65,6 @@ class Game
     puts "2. creator of the secret code?"
   end
 
-  def start
-    introduce
-    
-    play_side = gets.chomp.to_i
-
-    set_secret_code if play_side == 1
-
-    if play_side == 2
-      self.computer_guessing = true
-      puts "What should the secret code be?"
-      @code = get_input
-    end
-    
-    rounds_left = rounds
-
-    rounds.times do
-      return if guessed_right
-      play_round(rounds_left)
-      rounds_left -= 1
-    end
-
-    lose_game
-  end
-
   def get_input
     gets.chomp.num_string_to_arr
   end
@@ -74,7 +77,6 @@ class Game
     return false unless guess.length == 4
     
     true
-    
   end
 
   def play_round(attempts_left)
@@ -83,13 +85,12 @@ class Game
     puts "Pick a sequence of four digits from 1-6!".bold
     if computer_guessing
       @guess = computer.guess
-      #puts guess.join('')
     else
-      @guess = get_input
-
+      self.guess = get_input
+      
       until validate_code_input
         puts "Please enter exactly 4 digits, each between 1 and 6".red unless validate_code_input
-        @guess = get_input
+        self.guess = get_input
       end
     end
 
@@ -100,22 +101,23 @@ class Game
   def check_guess
     right_digits = Hash.new(0)
     exact_digits = 0
-
+    
     code.each_with_index do |digit, i|
       if guess.include?(digit) && !right_digits.key?(digit)
         right_digits[digit] = guess.count(digit)
       end
 
-      if right_digits[digit] > code.count(digit)
-        right_digits[digit] = code.count(digit)
-      end
+      right_digits[digit] = code.count(digit) if right_digits[digit] > code.count(digit)
       
       if digit == guess[i]
-        computer.guessed_numbers[i] = digit
+        computer.exact_numbers[i] = digit if computer
         right_digits[digit] -= 1
         exact_digits += 1
+        #right_digits.delete(digit) if right_digits[digit] < 1
       end
     end
+    
+    computer.guessed_numbers = right_digits if computer
 
     win_game if exact_digits == 4
 
@@ -148,17 +150,10 @@ class Game
   end
 
   def set_secret_code
-    code = random_code
-    puts @code.join('')
+    self.code = random_code
   end
 end
 
 
 game = Game.new
-#puts game.code.join('')
 game.start
-
-
-#until [Input is 4 numbers in range 1-6] do
-#  get_input
-#end
