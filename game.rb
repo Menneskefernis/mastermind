@@ -105,7 +105,6 @@ class Game
     if computer_guessing
       @guess = computer.guess
     else
-      #self.guess = get_input
       self.guess = validate_input
     end
 
@@ -128,7 +127,6 @@ class Game
         computer.exact_numbers[i] = digit if computer
         right_digits[digit] -= 1
         exact_digits += 1
-        #right_digits.delete(digit) if right_digits[digit] < 1
       end
     end
     
