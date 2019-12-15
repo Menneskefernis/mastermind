@@ -35,7 +35,7 @@ class Computer
     end
     
     puts code_guess.join('')
-    puts "Including in next guess: " + guessed_numbers.numbers_to_array.to_s.red unless guessed_numbers.numbers_to_array.empty?
+    puts "Numbers guessed, wrong position; including in next guess: " + guessed_numbers.numbers_to_array.to_s.red unless guessed_numbers.numbers_to_array.empty?
     puts ""
     code_guess
   end

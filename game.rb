@@ -20,18 +20,17 @@ end
 class Game
   include CodeHelper
   
-  
   def start
     introduce
-    
-    play_side = gets.chomp.to_i
 
-    set_secret_code if play_side == 1
+    choice = choose_side
+
+    set_secret_code if choice == 1
    
-    if play_side == 2
+    if choice == 2
       self.computer_guessing = true
       puts "What should the secret code be?"
-      self.code = get_input
+      self.code = validate_input
     end
     
     rounds_left = rounds
@@ -58,6 +57,16 @@ class Game
     @guessed_right = false
   end
 
+  def choose_side
+    choice = gets.chomp.to_i
+
+    until choice == 1 || choice == 2
+      puts "Pick either option '1' or '2'"
+      choice = gets.chomp.to_i
+    end
+    choice
+  end
+
   def introduce
     puts "Welcome to a game of Mastermind".bold
     puts "Would you like to be 1 or 2:"
@@ -69,14 +78,24 @@ class Game
     gets.chomp.num_string_to_arr
   end
 
-  def validate_code_input
-    return false unless guess
-    numbers_out_of_range = guess.any? { |number| number.to_i > 6 || number.to_i < 1}
+  def validate_code(code)
+    return false unless code
+    numbers_out_of_range = code.any? { |number| number.to_i > 6 || number.to_i < 1 }
     
     return false if numbers_out_of_range
-    return false unless guess.length == 4
+    return false unless code.length == 4
     
     true
+  end
+
+  def validate_input
+    _code = get_input
+    
+    until validate_code(_code)
+      puts "Please enter exactly 4 digits, each between 1 and 6".red unless validate_code(_code)
+      _code = get_input
+    end
+    _code
   end
 
   def play_round(attempts_left)
@@ -86,12 +105,8 @@ class Game
     if computer_guessing
       @guess = computer.guess
     else
-      self.guess = get_input
-      
-      until validate_code_input
-        puts "Please enter exactly 4 digits, each between 1 and 6".red unless validate_code_input
-        self.guess = get_input
-      end
+      #self.guess = get_input
+      self.guess = validate_input
     end
 
     check_guess
@@ -153,7 +168,6 @@ class Game
     self.code = random_code
   end
 end
-
 
 game = Game.new
 game.start
